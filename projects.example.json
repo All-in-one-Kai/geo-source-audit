@@ -1,0 +1,17 @@
+{
+  "_doc": "Example config. own_domains/own_names = your brand. questions = real buyer questions without brand names.",
+  "my-brand": {
+    "label": "My Brand",
+    "own_domains": [
+      "example.com"
+    ],
+    "own_names": [
+      "My Brand"
+    ],
+    "questions": [
+      "Which providers do you recommend for AI phone assistants for small businesses in Germany?",
+      "What should I look for when choosing an AI agency for process automation?",
+      "How much does a custom AI agent for customer service cost?"
+    ]
+  }
+}

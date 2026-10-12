@@ -1,0 +1,4 @@
+geo-audit/
+projects.json
+__pycache__/
+.env
