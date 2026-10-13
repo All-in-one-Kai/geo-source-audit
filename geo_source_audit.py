@@ -83,15 +83,19 @@ ENGINES = {"openai": ask_openai, "gemini": ask_gemini}
 
 def domain(u):
     try:
-        h = urlparse(u if "://" in u else "https://" + u).netloc.lower()
-    except ValueError:
+        parsed = urlparse(u if "://" in u else "https://" + u)
+        if parsed.scheme.lower() not in ("http", "https") or parsed.username or parsed.password:
+            return ""
+        h = (parsed.hostname or "").lower().rstrip(".").encode("idna").decode("ascii")
+    except (ValueError, UnicodeError, AttributeError, TypeError):
         return ""
     return h[4:] if h.startswith("www.") else h
 
 
 def is_own(u, proj):
-    low = u.lower()
-    return any(od.lower() in low for od in proj["own_domains"])
+    host = domain(u)
+    return bool(host) and any(host == own or host.endswith("." + own)
+                              for own in (domain(od) for od in proj["own_domains"]) if own)
 
 
 def named(text, proj):
@@ -122,7 +126,8 @@ def audit(key, proj, engines, run_id):
                     text, urls = ENGINES[e](q)
                     break
                 except Exception as ex:  # Netz/API-Fehler duerfen den Lauf nicht abbrechen
-                    err = f"{e}: {type(ex).__name__} {str(ex)[:100]}"
+                    # URLs/exception messages can contain provider keys or private input.
+                    err = f"{e}: {type(ex).__name__} (request failed; details withheld)"
                     time.sleep(5 * (attempt + 1))
             if text is None:
                 errors.append(err)
@@ -138,8 +143,7 @@ def report(key, proj, rows, errors, prev):
     n = len(rows)
     nm = sum(r["named"] for r in rows)
     ct = sum(r["cited"] for r in rows)
-    third = Counter(d for r in rows for d in r["domains"]
-                    if not any(od.split("/")[0] in d for od in proj["own_domains"]))
+    third = Counter(d for r in rows for d in r["domains"] if not is_own(d, proj))
     out = [f"## {proj['label']}", "",
            f"Answers: {n} · mentioned: **{nm}/{n}** · cited as source: **{ct}/{n}**"]
     if prev:
